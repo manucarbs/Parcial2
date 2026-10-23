@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "894640683343",
+    "project_id": "parcial2-e3771",
+    "storage_bucket": "parcial2-e3771.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:894640683343:android:04b6b685770146a5a5ad3a",
+        "android_client_info": {
+          "package_name": "edu.sv.ues.dam235.parcial2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBw6sbwQcdPXWGxM7BFDB6nC8Jo4psfdqY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

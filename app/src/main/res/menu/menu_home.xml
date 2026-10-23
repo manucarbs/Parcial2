@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_sync"
+        android:title="Sincronizar ahora"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_perfil"
+        android:title="Perfil"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_logout"
+        android:title="Cerrar sesión"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_mapa"
+        android:title="Mapa"
+        app:showAsAction="never" />
+</menu>
