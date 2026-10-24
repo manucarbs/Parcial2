@@ -10,7 +10,7 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        app:title="Mis Citas" />
+        app:title="Sabor Tours" />
 
     <TextView
         android:id="@+id/tvBienvenida"
@@ -27,7 +27,7 @@
         android:layout_weight="1">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvCitas"
+            android:id="@+id/rvReservas"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
@@ -38,7 +38,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="No hay citas. Pulsa + para crear una."
+            android:text="No tienes reservas. Pulsa + para crear una."
             android:visibility="gone" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="16dp"
-            android:contentDescription="Nueva cita"
+            android:contentDescription="Nueva reserva"
             android:src="@android:drawable/ic_input_add" />
     </FrameLayout>
 </LinearLayout>

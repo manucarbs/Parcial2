@@ -19,6 +19,7 @@ import edu.sv.ues.dam235.parcial2.util.RedUtil;
 import edu.sv.ues.dam235.parcial2.util.SeguridadUtil;
 import edu.sv.ues.dam235.parcial2.util.SesionManager;
 import edu.sv.ues.dam235.parcial2.util.Validador;
+import edu.sv.ues.dam235.parcial2.data.repository.ReservaRepository;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +31,7 @@ public class PerfilActivity extends AppCompatActivity {
     private Button btnReintentar, btnGuardar;
     private SesionManager sesion;
     private String uid;
+    private ReservaRepository repoReservas;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -44,6 +46,7 @@ public class PerfilActivity extends AppCompatActivity {
         sesion = new SesionManager(this);
         uid = sesion.getUsuarioActivo();
 
+        repoReservas = new ReservaRepository(this, uid);
         etCorreo = findViewById(R.id.etCorreo);
         etNombre = findViewById(R.id.etNombre);
         etActual = findViewById(R.id.etActual);
@@ -61,23 +64,41 @@ public class PerfilActivity extends AppCompatActivity {
 
     private void cargarPerfil() {
         executor.execute(() -> {
-            Usuario u = AppDatabase.getInstance(this).usuarioDao().buscarPorId(uid);
+            AppDatabase db = AppDatabase.getInstance(this);
+            Usuario u = db.usuarioDao().buscarPorId(uid);
+            boolean hayPend = (u != null && u.pendiente)
+                    || !db.reservaDao().obtenerPendientes(uid).isEmpty();
             runOnUiThread(() -> {
                 if (u == null) { finish(); return; }
                 etCorreo.setText(u.correo);
                 etNombre.setText(u.nombre);
-                mostrarEstado(u.pendiente);
-                // Reintento automático al abrir la ventana de perfil
-                if (u.pendiente) sincronizar();
+                refrescarEstado();
+                if (hayPend) sincronizar();   // reintento automático al abrir Perfil
             });
         });
     }
 
-    private void mostrarEstado(boolean pendiente) {
-        tvEstado.setText(pendiente
-                ? "⏳ Cambios pendientes de sincronizar con la nube"
-                : "✅ Perfil sincronizado con la nube");
-        btnReintentar.setVisibility(pendiente ? View.VISIBLE : View.GONE);
+    private void refrescarEstado() {
+        executor.execute(() -> {
+            AppDatabase db = AppDatabase.getInstance(this);
+            Usuario u = db.usuarioDao().buscarPorId(uid);
+            int citas = db.reservaDao().obtenerPendientes(uid).size();
+            boolean perfil = u != null && u.pendiente;
+            runOnUiThread(() -> {
+                boolean hay = perfil || citas > 0;
+                StringBuilder sb = new StringBuilder();
+                if (hay) {
+                    sb.append("⏳ Pendiente de sincronizar:");
+                    if (perfil) sb.append("\n• Cambios de perfil");
+                    if (citas > 0) sb.append("\n• ").append(citas)
+                            .append(citas == 1 ? " cita" : " citas");
+                } else {
+                    sb.append("✅ Todo sincronizado con la nube");
+                }
+                tvEstado.setText(sb.toString());
+                btnReintentar.setVisibility(hay ? View.VISIBLE : View.GONE);
+            });
+        });
     }
 
     // ---------- Guardar (validaciones + confirmación) ----------
@@ -140,7 +161,7 @@ public class PerfilActivity extends AppCompatActivity {
                 etActual.setText("");
                 etNueva.setText("");
                 etConfirmar.setText("");
-                mostrarEstado(true);
+                refrescarEstado();
                 Toast.makeText(this, "Guardado en el dispositivo", Toast.LENGTH_SHORT).show();
                 sincronizar();
             });
@@ -152,6 +173,7 @@ public class PerfilActivity extends AppCompatActivity {
         if (!RedUtil.hayInternet(this)) {
             Toast.makeText(this, "Sin internet: los cambios siguen pendientes",
                     Toast.LENGTH_LONG).show();
+            refrescarEstado();
             return;
         }
         btnReintentar.setEnabled(false);
@@ -159,7 +181,7 @@ public class PerfilActivity extends AppCompatActivity {
         executor.execute(() -> {
             Usuario u = AppDatabase.getInstance(this).usuarioDao().buscarPorId(uid);
             if (u == null || !u.pendiente) {
-                runOnUiThread(() -> { btnReintentar.setEnabled(true); mostrarEstado(false); });
+                runOnUiThread(this::sincronizarReservas);   // perfil al día: seguir con las citas
                 return;
             }
 
@@ -167,7 +189,6 @@ public class PerfilActivity extends AppCompatActivity {
             String anterior = sesion.getPassAnterior(uid);
 
             if (nueva != null && anterior != null) {
-                // Inicia sesión con la contraseña que aún tiene la nube y la reemplaza
                 FirebaseAuth.getInstance().signInWithEmailAndPassword(u.correo, anterior)
                         .addOnSuccessListener(r -> r.getUser().updatePassword(nueva)
                                 .addOnSuccessListener(x -> {
@@ -195,14 +216,20 @@ public class PerfilActivity extends AppCompatActivity {
                         Usuario f = db.usuarioDao().buscarPorId(uid);
                         f.pendiente = false;
                         db.usuarioDao().guardar(f);
-                        runOnUiThread(() -> {
-                            btnReintentar.setEnabled(true);
-                            mostrarEstado(false);
-                            Toast.makeText(this, "Perfil sincronizado con la nube",
-                                    Toast.LENGTH_SHORT).show();
-                        });
+                        runOnUiThread(this::sincronizarReservas);   // ahora las citas
                     }))
                     .addOnFailureListener(this::falloSync);
+        });
+    }
+
+    private void sincronizarReservas() {
+        repoReservas.sincronizar(ok -> {
+            btnReintentar.setEnabled(true);
+            refrescarEstado();
+            Toast.makeText(this, ok
+                            ? "Todo sincronizado con la nube"
+                            : "Algunos cambios siguen pendientes",
+                    Toast.LENGTH_SHORT).show();
         });
     }
 

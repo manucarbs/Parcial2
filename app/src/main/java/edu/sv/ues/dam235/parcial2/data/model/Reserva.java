@@ -5,15 +5,16 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import java.util.UUID;
 
-@Entity(tableName = "citas")
-public class Cita {
+@Entity(tableName = "reservas")
+public class Reserva {
     @PrimaryKey @NonNull
     public String id = UUID.randomUUID().toString();
     public String usuarioId;
-    public String titulo;
-    public String descripcion;
+    public String restaurante;
+    public int personas = 1;
     public String fecha;          // dd/MM/yyyy
     public String hora;           // HH:mm
+    public String notas;
     public boolean pendiente;     // true = falta subir a Firestore
     public boolean eliminado;     // true = borrado local, falta borrar en la nube
 }

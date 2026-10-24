@@ -16,8 +16,8 @@ public class MapaActivity extends AppCompatActivity implements OnMapReadyCallbac
     // Punto predefinido: CAMBIA estas coordenadas y el nombre por los de tu negocio
     private static final double LATITUD = 13.721161;
     private static final double LONGITUD = -89.728718;
-    private static final String NOMBRE = "Mi negocio";
-    private static final String DIRECCION = "Dirección de mi negocio";
+    private static final String NOMBRE = "Sabor Tours";
+    private static final String DIRECCION = "Sonsonate";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

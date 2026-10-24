@@ -7,25 +7,25 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import edu.sv.ues.dam235.parcial2.R;
-import edu.sv.ues.dam235.parcial2.data.model.Cita;
+import edu.sv.ues.dam235.parcial2.data.model.Reserva;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CitaAdapter extends RecyclerView.Adapter<CitaAdapter.VH> {
+public class ReservaAdapter extends RecyclerView.Adapter<ReservaAdapter.VH> {
 
     public interface Acciones {
-        void editar(Cita c);
-        void eliminar(Cita c);
+        void editar(Reserva r);
+        void eliminar(Reserva r);
     }
 
-    private List<Cita> datos = new ArrayList<>();
+    private List<Reserva> datos = new ArrayList<>();
     private final Acciones acciones;
 
-    public CitaAdapter(Acciones acciones) {
+    public ReservaAdapter(Acciones acciones) {
         this.acciones = acciones;
     }
 
-    public void setDatos(List<Cita> nuevos) {
+    public void setDatos(List<Reserva> nuevos) {
         datos = nuevos;
         notifyDataSetChanged();
     }
@@ -34,23 +34,24 @@ public class CitaAdapter extends RecyclerView.Adapter<CitaAdapter.VH> {
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_cita, parent, false);
+                .inflate(R.layout.item_reserva, parent, false);
         return new VH(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
-        Cita c = datos.get(position);
-        h.tvTitulo.setText(c.titulo);
-        h.tvFechaHora.setText("📅 " + c.fecha + "   🕒 " + c.hora);
-        h.tvDescripcion.setText(c.descripcion);
-        h.tvDescripcion.setVisibility(
-                c.descripcion == null || c.descripcion.isEmpty() ? View.GONE : View.VISIBLE);
-        h.tvEstado.setText(c.pendiente
+        Reserva r = datos.get(position);
+        h.tvRestaurante.setText(r.restaurante);
+        h.tvDetalle.setText("📅 "  + r.fecha + "   🕒 "  + r.hora
+                + "   👥 "  + r.personas + (r.personas == 1 ? " persona" : " personas"));
+        h.tvNotas.setText(r.notas);
+        h.tvNotas.setVisibility(
+                r.notas == null || r.notas.isEmpty() ? View.GONE : View.VISIBLE);
+        h.tvEstado.setText(r.pendiente
                 ? "⏳ Pendiente de sincronizar"
                 : "☁️ Sincronizada con la nube");
-        h.btnEditar.setOnClickListener(v -> acciones.editar(c));
-        h.btnEliminar.setOnClickListener(v -> acciones.eliminar(c));
+        h.btnEditar.setOnClickListener(v -> acciones.editar(r));
+        h.btnEliminar.setOnClickListener(v -> acciones.eliminar(r));
     }
 
     @Override
@@ -59,14 +60,14 @@ public class CitaAdapter extends RecyclerView.Adapter<CitaAdapter.VH> {
     }
 
     static class VH extends RecyclerView.ViewHolder {
-        TextView tvTitulo, tvFechaHora, tvDescripcion, tvEstado;
+        TextView tvRestaurante, tvDetalle, tvNotas, tvEstado;
         View btnEditar, btnEliminar;
 
         VH(@NonNull View itemView) {
             super(itemView);
-            tvTitulo = itemView.findViewById(R.id.tvTitulo);
-            tvFechaHora = itemView.findViewById(R.id.tvFechaHora);
-            tvDescripcion = itemView.findViewById(R.id.tvDescripcion);
+            tvRestaurante = itemView.findViewById(R.id.tvRestaurante);
+            tvDetalle = itemView.findViewById(R.id.tvDetalle);
+            tvNotas = itemView.findViewById(R.id.tvNotas);
             tvEstado = itemView.findViewById(R.id.tvEstado);
             btnEditar = itemView.findViewById(R.id.btnEditar);
             btnEliminar = itemView.findViewById(R.id.btnEliminar);

@@ -3,6 +3,9 @@ package edu.sv.ues.dam235.parcial2.ui;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -20,25 +23,21 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import edu.sv.ues.dam235.parcial2.R;
 import edu.sv.ues.dam235.parcial2.data.local.AppDatabase;
-import edu.sv.ues.dam235.parcial2.data.model.Cita;
+import edu.sv.ues.dam235.parcial2.data.model.Reserva;
 import edu.sv.ues.dam235.parcial2.data.model.Usuario;
-import edu.sv.ues.dam235.parcial2.data.repository.CitaRepository;
+import edu.sv.ues.dam235.parcial2.data.repository.ReservaRepository;
 import edu.sv.ues.dam235.parcial2.util.SesionManager;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class HomeActivity extends AppCompatActivity implements CitaAdapter.Acciones {
+public class HomeActivity extends AppCompatActivity implements ReservaAdapter.Acciones {
     private SesionManager sesion;
-    private CitaRepository repo;
-    private CitaAdapter adapter;
+    private ReservaRepository repo;
+    private ReservaAdapter adapter;
     private TextView tvBienvenida, tvVacio;
     private ConnectivityManager.NetworkCallback redCallback;
     private final AtomicBoolean sincronizando = new AtomicBoolean(false);
@@ -51,13 +50,13 @@ public class HomeActivity extends AppCompatActivity implements CitaAdapter.Accio
         setSupportActionBar((MaterialToolbar) findViewById(R.id.toolbar));
 
         sesion = new SesionManager(this);
-        repo = new CitaRepository(this, sesion.getUsuarioActivo());
+        repo = new ReservaRepository(this, sesion.getUsuarioActivo());
 
         tvBienvenida = findViewById(R.id.tvBienvenida);
         tvVacio = findViewById(R.id.tvVacio);
 
-        adapter = new CitaAdapter(this);
-        RecyclerView rv = findViewById(R.id.rvCitas);
+        adapter = new ReservaAdapter(this);
+        RecyclerView rv = findViewById(R.id.rvReservas);
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
 
@@ -85,7 +84,6 @@ public class HomeActivity extends AppCompatActivity implements CitaAdapter.Accio
         redCallback = new ConnectivityManager.NetworkCallback() {
             @Override
             public void onCapabilitiesChanged(Network network, NetworkCapabilities nc) {
-                // VALIDATED = la red ya tiene salida real a internet
                 if (nc.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                         && nc.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
                     sincronizarAhora(false);
@@ -126,50 +124,52 @@ public class HomeActivity extends AppCompatActivity implements CitaAdapter.Accio
         repo.listar(this::mostrar);
     }
 
-    private void mostrar(List<Cita> citas) {
-        adapter.setDatos(citas);
-        tvVacio.setVisibility(citas.isEmpty() ? View.VISIBLE : View.GONE);
+    private void mostrar(List<Reserva> reservas) {
+        adapter.setDatos(reservas);
+        tvVacio.setVisibility(reservas.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
     // ---------- Acciones del adapter ----------
     @Override
-    public void editar(Cita c) {
-        mostrarFormulario(c);
+    public void editar(Reserva r) {
+        mostrarFormulario(r);
     }
 
     @Override
-    public void eliminar(Cita c) {
+    public void eliminar(Reserva r) {
         new MaterialAlertDialogBuilder(this)
-                .setTitle("Eliminar cita")
-                .setMessage("¿Eliminar \"" + c.titulo + "\"?")
-                .setNegativeButton("Cancelar", null)
-                .setPositiveButton("Eliminar", (d, w) ->
-                        repo.eliminar(c, ok -> {
-                            avisar(ok, "Cita eliminada");
+                .setTitle("Cancelar reserva")
+                .setMessage("¿Cancelar tu reserva en \"" + r.restaurante + "\"?")
+                .setNegativeButton("No", null)
+                .setPositiveButton("Sí, cancelar", (d, w) ->
+                        repo.eliminar(r, ok -> {
+                            avisar(ok, "Reserva cancelada");
                             recargar();
                         }))
                 .show();
     }
 
     // ---------- Formulario (crear / editar) ----------
-    private void mostrarFormulario(Cita existente) {
-        View vista = getLayoutInflater().inflate(R.layout.dialog_cita, null);
-        TextInputEditText etTitulo = vista.findViewById(R.id.etTitulo);
-        TextInputEditText etDescripcion = vista.findViewById(R.id.etDescripcion);
+    private void mostrarFormulario(Reserva existente) {
+        View vista = getLayoutInflater().inflate(R.layout.dialog_reserva, null);
+        TextInputEditText etRestaurante = vista.findViewById(R.id.etRestaurante);
+        TextInputEditText etPersonas = vista.findViewById(R.id.etPersonas);
         TextInputEditText etFecha = vista.findViewById(R.id.etFecha);
         TextInputEditText etHora = vista.findViewById(R.id.etHora);
+        TextInputEditText etNotas = vista.findViewById(R.id.etNotas);
 
         if (existente != null) {
-            etTitulo.setText(existente.titulo);
-            etDescripcion.setText(existente.descripcion);
+            etRestaurante.setText(existente.restaurante);
+            etPersonas.setText(String.valueOf(existente.personas));
             etFecha.setText(existente.fecha);
             etHora.setText(existente.hora);
+            etNotas.setText(existente.notas);
         }
         etFecha.setOnClickListener(v -> elegirFecha(etFecha));
         etHora.setOnClickListener(v -> elegirHora(etHora));
 
         AlertDialog dialogo = new MaterialAlertDialogBuilder(this)
-                .setTitle(existente == null ? "Nueva cita" : "Editar cita")
+                .setTitle(existente == null ? "Nueva reserva" : "Editar reserva")
                 .setView(vista)
                 .setNegativeButton("Cancelar", null)
                 .setPositiveButton("Guardar", null) // se define abajo para no cerrar si hay errores
@@ -177,23 +177,39 @@ public class HomeActivity extends AppCompatActivity implements CitaAdapter.Accio
 
         dialogo.setOnShowListener(d ->
                 dialogo.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                    String titulo = etTitulo.getText().toString().trim();
+                    String restaurante = etRestaurante.getText().toString().trim();
+                    String sPersonas = etPersonas.getText().toString().trim();
                     String fecha = etFecha.getText().toString().trim();
                     String hora = etHora.getText().toString().trim();
 
-                    if (titulo.isEmpty()) { etTitulo.setError("Escribe un título"); return; }
+                    if (restaurante.isEmpty()) {
+                        etRestaurante.setError("Escribe el restaurante");
+                        return;
+                    }
+                    int personas;
+                    try {
+                        personas = Integer.parseInt(sPersonas);
+                    } catch (NumberFormatException e) {
+                        etPersonas.setError("Indica cuántas personas");
+                        return;
+                    }
+                    if (personas < 1 || personas > 50) {
+                        etPersonas.setError("Entre 1 y 50 personas");
+                        return;
+                    }
                     if (fecha.isEmpty()) { etFecha.setError("Elige una fecha"); return; }
                     if (hora.isEmpty()) { etHora.setError("Elige una hora"); return; }
 
-                    Cita c = (existente != null) ? existente : new Cita();
-                    c.titulo = titulo;
-                    c.descripcion = etDescripcion.getText().toString().trim();
-                    c.fecha = fecha;
-                    c.hora = hora;
+                    Reserva r = (existente != null) ? existente : new Reserva();
+                    r.restaurante = restaurante;
+                    r.personas = personas;
+                    r.fecha = fecha;
+                    r.hora = hora;
+                    r.notas = etNotas.getText().toString().trim();
 
                     dialogo.dismiss();
-                    repo.guardar(c, ok -> {
-                        avisar(ok, "Cita guardada");
+                    repo.guardar(r, ok -> {
+                        avisar(ok, "Reserva guardada");
                         recargar();
                     });
                 }));
@@ -239,12 +255,11 @@ public class HomeActivity extends AppCompatActivity implements CitaAdapter.Accio
         } else if (id == R.id.action_perfil) {
             startActivity(new Intent(this, PerfilActivity.class));
             return true;
+        } else if (id == R.id.action_mapa) {
+            startActivity(new Intent(this, MapaActivity.class));
+            return true;
         } else if (id == R.id.action_logout) {
             cerrarSesion();
-            return true;
-        }
-        if (id == R.id.action_mapa) {
-            startActivity(new Intent(this, MapaActivity.class));
             return true;
         }
         return super.onOptionsItemSelected(item);
